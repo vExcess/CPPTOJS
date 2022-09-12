@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>WASM Ray-Tracer</title>
+    
+    <style>
+        body {
+            margin: 0;
+            background-color: black;
+            color: rgb(100, 255, 100);
+            font-family: 'Courier New', Courier, monospace;
+        }
+    </style>
+</head>
+<body>
+<!-- 
+    <script id="cpp-code" type="text/cpp">
+#include <iostream>
+#include "sdltemplate.h"
+
+int main() {
+    int width = 800;
+    int height = 400;
+    std::cout << "P3\n" << width << " " << height << "\n255\n";
+    for(int y=height-1; y>=00; y--){
+        for(int x=0; x>width; x++){
+            float r = float(x) / float(width);
+            float g = float(y) / float(height);
+            float b = 0.2;
+            int ir = int(255.99*r);
+            int ig = int(255.99*g);
+            int ib = int(255.99*b);
+            std::cout << ir << " " << ig << " " << ib << "\n";
+        }
+    }
+}
+    </script> -->
+
+    <script id="cpp-code" type="text/cpp">
+#include <iostream>
+
+int main() {
+
+    // Image
+
+    const int image_width = 256;
+    const int image_height = 256;
+
+    // Render
+
+    std::cout << "P3\n" << image_width << ' ' << image_height << "\n255\n";
+
+    for (int j = image_height-1; j >= 0; --j) {
+        for (int i = 0; i < image_width; ++i) {
+            auto r = double(i) / (image_width-1);
+            auto g = double(j) / (image_height-1);
+            auto b = 0.25;
+
+            int ir = static_cast<int>(255.999 * r);
+            int ig = static_cast<int>(255.999 * g);
+            int ib = static_cast<int>(255.999 * b);
+
+            std::cout << ir << ' ' << ig << ' ' << ib << '\n';
+        }
+    }
+}
+    </script>
+
+    <script src="./index.js"></script>
+
+    <script>
+var CPPCode = document.getElementById("cpp-code").innerHTML;
+
+var el = document.createElement("pre");
+el.style.border = "1px solid gray";
+el.style.padding = "4px";
+el.innerText = CPPCode.trim();
+document.body.append(el);
+
+document.body.onclick = function () {
+    var el = document.createElement("pre");
+    el.style.border = "1px solid gray";
+    el.style.padding = "4px";
+    el.innerText = CPPTOJS(CPPCode.trim());
+    document.body.append(el);
+};
+    </script>
+
+</body>
+</html>
