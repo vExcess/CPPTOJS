@@ -1,24 +1,32 @@
 // compiles C++ code to ASM.JS using JavaScript
 var CPPTOJS = function (entryPoint) {
-    var code = CPPTOJS.fileTree.CPP[entryPoint];
+    let code = CPPTOJS.fileTree.CPP[entryPoint];
 
     if (code === undefined) {
         code = "/* FILE NOT FOUND */";
     }
 
-    var JSCode = ""; // result of transpilation
+    let JSCode = ""; // result of transpilation
 
-    var i = 0, cc = ""; // index of cursor in code
+    let i = 0, cc = ""; // index of cursor in code
+
+    let braceLevel = 0; // curly braces
+    let classBraceLevel;
+    let className;
+
+    let parenthesisLevel = 0;
+    let functionParenthesisLevel;
 
     // store some other stuff
-    var inString = false, inSingleLineComment = false;
+    let inString, inSingleLineComment, inClass, inParameters, isGonnaDefineClass;
+    isGonnaDefineClass = inParameters = inString = inSingleLineComment = inClass = false;
 
     // store code line number
-    var lineNum = 1;
+    let lineNum = 1;
 
-    var specialKeywords = "alignas decltype namespace struct alignof default new switch and delete noexcept template and_eq do not this asm double not_eq thread_local auto dynamic_cast nullptr throw bitand else operator true bitor enum or try bool explicit or_eq typedef break export private typeid case extern protected typename catch false public union char float register unsigned char16_t for reinterpret_cast using char32_t friend return virtual class goto short void compl if signed volatile const inline sizeof wchar_t constexpr int static while const_cast long static_assert xor continue mutable static_cast xor_eq".split(" ");
+    let specialKeywords = "alignas decltype namespace struct alignof default new switch and delete noexcept template and_eq do not this asm double not_eq thread_local auto dynamic_cast nullptr throw bitand else operator true bitor enum or try bool explicit or_eq typedef break export private typeid case extern protected typename catch false public union char float register unsigned char16_t for reinterpret_cast using char32_t friend return virtual class goto short void compl if signed volatile const inline sizeof wchar_t constexpr int static while const_cast long static_assert xor continue mutable static_cast xor_eq".split(" ");
 
-    var dataTypes = "int long char float double bool short string auto".split(" ");
+    let dataTypes = "int long char float double bool short string auto".split(" ");
 
     function fileNameToJS (fileName) {
         return fileName.split(".")[0] + ".mjs";
@@ -109,8 +117,42 @@ var CPPTOJS = function (entryPoint) {
                 inSingleLineComment = true;
             }
 
+            if (is("{")) {
+                braceLevel++;
+
+                if (isGonnaDefineClass) {
+                    classBraceLevel = braceLevel;
+                    inClass = true;
+                    isGonnaDefineClass = false;
+                }
+            } else if (is("}")) {
+                braceLevel--;
+
+                if (inClass && braceLevel === classBraceLevel - 1) {
+                    inClass = false;
+                }
+            }
+
+            if (is("(")) {
+                parenthesisLevel++;
+            } else if (is(")")) {
+                if (inParameters && parenthesisLevel === functionParenthesisLevel) {
+                    inParameters = false;
+                }
+
+                parenthesisLevel--;
+            }
+
+            if (is("class ")) {
+                isGonnaDefineClass = true;
+
+                className = code.slice(idxOfNext(" ") + 1);
+                className = className.slice(0, Math.min(className.indexOf(" "), className.indexOf(":")));
+                dataTypes.push(className);
+            }
+
             // lets change imports to comments
-            if (is("#include")) {
+            if (is("#include ")) {
                 i += 9;
                 
                 let fName = code.slice(i, idxOfNext("\n")).trim();
@@ -126,13 +168,23 @@ var CPPTOJS = function (entryPoint) {
                 i = idxOfNext("\n");
             }
 
+            if (is("inline ")) {
+                cc = "";
+                i += 6;
+            }
+
             if (is("true")) {
                 cc = "TRUE";
                 i += 3;
-            }
-            if (is("false")) {
+            } 
+            else if (is("false")) {
                 cc = "FALSE";
                 i += 4;
+            }
+
+            if (is("public:")) {
+                cc = "";
+                i += 6;
             }
 
             // parse at data types
@@ -151,8 +203,42 @@ var CPPTOJS = function (entryPoint) {
                         var functionName = code.slice(i + 1, idxOfNext("(")).trim();
                         if (functionName === "main") {
                             cc = "async function";
-                        } else {
+                        } else if (!inClass && !isGonnaDefineClass) {
                             cc = "function";
+                        } else if (!isGonnaDefineClass) {
+                            if (dataType === className) {
+                                cc = '=======';
+                            } else {
+                                cc = "";
+                                i++;
+                            }
+                        } else {
+                            cc = dataType;
+                        }
+                        
+                        // set to be inside parameters
+                        inParameters = true;
+                        functionParenthesisLevel = parenthesisLevel + 1;
+
+                        // delete const from methods
+                        if (idxOfNext("const") < idxOfNext("{")) {
+                            del(idxOfNext("const"), "const".length);
+                        }
+                        
+                    } else if (idxOfNext("(") < idxOfNext(";") && idxOfNext("(") < idxOfNext("=")) {
+                        // constructors
+                        if (inClass && dataType === className) {
+                            cc = "constructor";
+                            i += dataType.length - 1;
+                            
+                            // set to be inside parameters
+                            inParameters = true;
+                            functionParenthesisLevel = parenthesisLevel + 1;
+
+                            // delete const from methods
+                            if (idxOfNext("const") < idxOfNext("{")) {
+                                del(idxOfNext("const"), "const".length);
+                            }
                         }
                     } else if (code.slice(i, idxOfNext(";")).includes("=")) {
                         // check if is a const
@@ -160,10 +246,15 @@ var CPPTOJS = function (entryPoint) {
                             cc = "";
                             del(i, 1);
                         } 
-                        // otherwise is a var
+                        // check if it's a parameter
+                        else if (inParameters) {
+                            cc = "";
+                            i++;
+                        }
+                        // otherwise it's a var
                         else {
                             cc = "var";
-                        }                        
+                        }                     
 
                         // cast int to int using | 0
                         if (dataType === "int") {
@@ -232,8 +323,7 @@ var CPPTOJS = function (entryPoint) {
         Function(JSCode);
     } catch (err) {
         if (!err.toString().includes(" import ")) {
-            console.log(err);
-            return "// FAILED TO TRANSPILE TO JS //\n" + JSCode;
+            JSCode = "// FAILED TO TRANSPILE TO JS //\n" + JSCode;
         }
     }
 
