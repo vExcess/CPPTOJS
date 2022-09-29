@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>WASM Ray-Tracer</title>
+    
+    <style>
+        body {
+            margin: 0;
+            background-color: black;
+            color: rgb(255, 255, 255);
+            font-family: 'Courier New', Courier, monospace;
+        }
+    </style>
+
+    <!-- import CPP2JS -->
+    <script src="./index.js"></script>
+</head>
+<body>
+
+    <div id="CPPTOJS">
+        <script id="CPP/vec3.h" type="text/cpp">
+            #include <math.h>
+            #include <stdlib.h>
+            #include <iostream>
+            
+            class vec3 {
+            public:
+                vec3() {}
+                vec3(float e0, float e1, float e2) {e[0]=e0;e[1]=e1;e[2]=e2;}
+            
+                inline float x() const {return e[0];}
+                inline float y() const {return e[1];}
+                inline float z() const {return e[2];}
+                inline float r() const {return e[0];}
+                inline float g() const {return e[1];}
+                inline float b() const {return e[2];}
+            
+                inline const vec3& operator+() const {return *this;}
+                inline vec3 operator-() const {return vec3(-e[0],-e[1],-e[2]);}
+                inline float operator[](int i) const {return e[i];}
+                inline float& operator[](int i) {return e[i];}
+                
+                inline vec3& operator+=(const vec3 &v2);
+                inline vec3& operator-=(const vec3 &v2);
+                inline vec3& operator*=(const vec3 &v2);
+                inline vec3& operator/=(const vec3 &v2);
+                inline vec3& operator*=(const float t);
+                inline vec3& operator/=(const float t);
+            
+                inline float length() const {return sqrt(e[0]*e[0] + e[1]*e[1] + e[2]*e[2]);}
+                inline float length_squared() const {return e[0]*e[0] + e[1]*e[1] + e[2]*e[2];}
+                inline void make_unit_vector();
+            
+                float e[3];
+            };
+            
+            inline std::istream& operator>>(std::istream &is, vec3 &t) {
+                is >> t.e[0] >> t.e[1] >> t.e[2]; // input stream
+                return is;
+            }
+            
+            inline std::ostream& operator<<(std::ostream &os, vec3 &t) {
+                os << t.e[0] << " " << t.e[1] << " " << t.e[2]; // output stream
+                return os;
+            }
+            
+            inline void vec3::make_unit_vector() {
+                float k = 1.0 / sqrt(e[0]*e[0] + e[1]*e[1] + e[2]*e[2]);
+                e[0] *= k; e[1] *= k; e[2] *= k;
+            }
+            
+            inline vec3 operator+(const vec3 &v1, const vec3 &v2) {
+                return vec3(v1.e[0]+v2.e[0],v1.e[1]+v2.e[1],v1.e[2]+v2.e[2]);
+            }
+            
+            inline vec3 operator-(const vec3 &v1, const vec3 &v2) {
+                return vec3(v1.e[0]-v2.e[0],v1.e[1]-v2.e[1],v1.e[2]-v2.e[2]);
+            }
+            
+            inline vec3 operator*(const vec3 &v1, const vec3 &v2) {
+                return vec3(v1.e[0]*v2.e[0],v1.e[1]*v2.e[1],v1.e[2]*v2.e[2]);
+            }
+            
+            inline vec3 operator/(const vec3 &v1, const vec3 &v2) {
+                return vec3(v1.e[0]/v2.e[0],v1.e[1]/v2.e[1],v1.e[2]/v2.e[2]);
+            }
+            
+            inline vec3 operator*(float t, const vec3 &v) {
+                return vec3(t*v.e[0],t*v.e[1],t*v.e[2]);
+            }
+            inline vec3 operator/(float t, const vec3 &v) {
+                return vec3(t/v.e[0],t/v.e[1],t/v.e[2]);
+            }
+            inline vec3 operator/(const vec3 &v, float t) {
+                return vec3(v.e[0]/t,v.e[1]/t,v.e[2]/t);
+            }
+            
+            inline float dot(const vec3 &v1, const vec3 &v2) {
+                return v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2];
+            }
+            
+            inline vec3 cross(const vec3 &v1, const vec3 &v2) {
+                return vec3(v1.e[1]*v2.e[2] - v1.e[2]*v2[1], 
+                -(v1.e[0]*v2.e[2] - v1.e[2]*v2[0]),
+                v1.e[0]*v2.e[1] - v1.e[1]*v2[0]);
+            }
+            
+            inline vec3& vec3::operator+=(const vec3 &v) {
+                e[0] += v.e[0];
+                e[1] += v.e[1];
+                e[2] += v.e[2];
+                return *this;
+            }
+            inline vec3& vec3::operator-=(const vec3 &v) {
+                e[0] -= v.e[0];
+                e[1] -= v.e[1];
+                e[2] -= v.e[2];
+                return *this;
+            }
+            inline vec3& vec3::operator*=(const vec3 &v) {
+                e[0] *= v.e[0];
+                e[1] *= v.e[1];
+                e[2] *= v.e[2];
+                return *this;
+            }
+            inline vec3& vec3::operator/=(const vec3 &v) {
+                e[0] /= v.e[0];
+                e[1] /= v.e[1];
+                e[2] /= v.e[2];
+                return *this;
+            }
+            
+            inline vec3& vec3::operator*=(const float t) {
+                e[0] *= t;
+                e[1] *= t;
+                e[2] *= t;
+                return *this;
+            }
+            inline vec3& vec3::operator/=(const float t) {
+                float k = 1.0/t;
+                e[0] /= k;
+                e[1] /= k;
+                e[2] /= k;
+                return *this;
+            }
+            inline vec3 unit_vector(vec3 v) {
+                return v / v.length();
+            }
+        </script>
+            
+        <script id="CPP/main.cpp" type="text/cpp">
+            #include <iostream>
+            #include "sdltemplate.h"
+            #include "vec3.h"
+            
+            int main() {
+                int width = 800;
+                int height = 400;
+                std::cout << "P3\n" << width << " " << height << "\n255\n";
+                sdltemplate::sdl("Ray Tracer", width, height);
+                sdltemplate::loop();
+                for(int y=height-1; y>=00; y--){
+                    for(int x=0; x<width; x++){
+                        // float r = float(x) / float(width);
+                        // float g = float(y) / float(height);
+                        // float b = 0.2;
+                        int ir = int(255.99*r);
+                        int ig = int(255.99*g);
+                        int ib = int(255.99*b);
+                        std::cout << ir << " " << ig << " " << ib << "\n";
+                        sdltemplate::setDrawColor(sdltemplate::createColor(ir,ig,ib,255));
+                        sdltemplate::drawPoint(x,height-y);
+                    }
+                }
+                while(sdltemplate::running) {
+                    sdltemplate::loop();
+                }
+            }
+        </script>
+    </div>
+
+    <script id="test" type="text/mjs">
+export function test () {
+    console.log("hello");
+}
+    </script>
+
+    <script>
+        
+CPPTOJS.buildFileTree();
+
+var JSTree = CPPTOJS.transpile("main.cpp");
+
+for (var file in JSTree) {
+    var el = document.createElement("pre");
+    el.style.border = "1px solid gray";
+    el.style.padding = "4px";
+    el.innerText = "/* ----- " + file + " ----- */\n\n" + JSTree[file];
+    document.body.append(el);
+}
+
+
+// Function(el.innerText + "\n\nmain();")();
+
+// const myJSFile = new Blob([document.getElementById("test").innerHTML], {type: 'text/javascript'});
+// const myJSURL = URL.createObjectURL(myJSFile);
+// import(myJSURL).then(module => {
+//     console.log( module.test );
+// });
+
+    </script>
+
+</body>
+</html>
