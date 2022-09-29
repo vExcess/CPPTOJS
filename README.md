@@ -2,7 +2,7 @@
 A JavaScript library that converts C++ code into JavaScript code
 
 ## How To Use
-1) Import CPPTOJS
+1) Import CPPTOJS (the index.js file on this repo)
 
 2) Create a div with the id `CPPTOJS` and put script tags in it. Each script tag represents a C++ file. Set the id of each script to a file path. Make sure that the file path begins with `CPP/` . Also make sure to set the `type` on the script tag so that the browser will not try running it as code.
 ```
