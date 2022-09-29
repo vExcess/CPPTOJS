@@ -1,5 +1,7 @@
 # CPPTOJS
-A JavaScript library that converts C++ code into JavaScript code
+A JavaScript library that converts C++ code into JavaScript code. Well, at least that's what it was supposed to be, but then I got to the point of trying to implement operator overloading and function overloading in JavaScript and gave up. So yeah, this library does work, but only for super simple C++ programs that don't use any functionality that JavaScript doesn't support such as function overloading, operator overloading, references, and pointers.
+
+Maybe someday I'll come back to this and try and implement an equivelant to implement all that stuff in JavaScript even though JS doesn't have native support for it, but for now I'm gonna focus more on my JVM.
 
 ## How To Use
 1) Import CPPTOJS (the index.js file on this repo)
