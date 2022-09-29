@@ -1,6 +1,26 @@
-# CPP2JS
-Converts C++ code to JS using JS
+# CPPTOJS
+A JavaScript library that converts C++ code into JavaScript code
 
-# How To Use
-1) import index.js from this repo
-2) call CPPTOJS() on a string of C++ code; it will return a string of JS code
+## How To Use
+1) Import CPPTOJS
+
+2) Create a div with the id `CPPTOJS` and put script tags in it. Each script tag represents a C++ file. Set the id of each script to a file path. Make sure that the file path begins with `CPP/` . Also make sure to set the `type` on the script tag so that the browser will not try running it as code.
+```
+<div id="CPPTOJS">
+    <script id="CPP/vec3.h" type="text/cpp">
+        // C++ code here
+    </script>
+
+    <script id="CPP/main.cpp" type="text/cpp">
+        // C++ code here
+    </script>
+</div>
+```
+
+3) Call the `CPPTOJS.buildFileTree();` method. This will build a file tree using the div of files from the previous step
+
+4) Run the `CPPTOJS.transpile()` method. This method returns file tree containing module JavaScript files
+```
+var JSFileTree = CPPTOJS.transpile("main.cpp");
+console.log(JSFileTree);
+```
